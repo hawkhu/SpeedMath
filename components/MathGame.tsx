@@ -3,6 +3,7 @@ import { generateProblem } from '../utils/gameLogic';
 import { MathProblem, GameStatus, GameMode } from '../types';
 import { Button } from './Button';
 import { Trophy, Flame, RefreshCcw, CheckCircle2, XCircle, Keyboard, MousePointerClick } from 'lucide-react';
+import { playGameSound } from '../utils/audio';
 
 interface MathGameProps {
   mode: GameMode;
@@ -44,6 +45,7 @@ export const MathGame: React.FC<MathGameProps> = ({ mode }) => {
   };
 
   const handleCorrectAnswer = () => {
+    playGameSound('correct');
     setStatus('correct');
     setScore(s => s + 10 + (streak * 2)); 
     setStreak(s => {
@@ -61,6 +63,7 @@ export const MathGame: React.FC<MathGameProps> = ({ mode }) => {
   };
 
   const handleWrongAnswer = () => {
+    playGameSound('wrong');
     setStatus('wrong');
     setStreak(0);
     
