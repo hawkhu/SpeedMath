@@ -29,13 +29,13 @@ const App: React.FC = () => {
           </h1>
           
           {/* Centered Tab Navigation */}
-          <div className="flex flex-wrap justify-center gap-2 p-1 bg-white/10 backdrop-blur-md rounded-2xl mx-auto w-fit border border-white/10">
+          <div className="flex flex-wrap justify-center gap-1.5 p-1 bg-white/10 backdrop-blur-md rounded-xl mx-auto w-fit border border-white/10">
             {modes.map((mode) => (
               <button
                 key={mode.id}
                 onClick={() => setCurrentMode(mode.id)}
                 className={`
-                  px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200
+                  px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all duration-200
                   ${currentMode === mode.id 
                     ? 'bg-white text-indigo-700 shadow-md transform scale-105' 
                     : 'text-indigo-100 hover:bg-white/10 hover:text-white'

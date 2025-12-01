@@ -46,7 +46,6 @@ export const MathGame: React.FC<MathGameProps> = ({ mode }) => {
     const userAnswer = parseFloat(inputValue);
     
     // Check for equality. For floating points in this specific game (2 decimals max), exact match is expected.
-    // If we needed loose tolerance, we would use Math.abs(userAnswer - problem.answer) < Number.EPSILON
     if (userAnswer === problem.answer) {
       // Correct Answer
       setStatus('correct');
@@ -94,6 +93,79 @@ export const MathGame: React.FC<MathGameProps> = ({ mode }) => {
     inputRef.current?.focus();
   };
 
+  // Render Logic helpers
+  const renderProblemDisplay = () => {
+    // Specialized Tree View for Factorization
+    if (mode === 'factorization' && problem.customVisual) {
+      const { root, left, right } = problem.customVisual;
+      
+      // If the leaf is '?', show the current input value (or '?' if empty)
+      const leftDisplay = left === '?' ? (inputValue || '?') : left;
+      const rightDisplay = right === '?' ? (inputValue || '?') : right;
+      
+      const isLeftActive = left === '?';
+      const isRightActive = right === '?';
+
+      return (
+        <div className="flex flex-col items-center justify-center w-full max-w-[240px] h-[180px] relative">
+          {/* SVG Connectors */}
+          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+            {/* Left Line */}
+            <line x1="50%" y1="25%" x2="20%" y2="75%" stroke="#cbd5e1" strokeWidth="4" strokeLinecap="round" />
+            {/* Right Line */}
+            <line x1="50%" y1="25%" x2="80%" y2="75%" stroke="#cbd5e1" strokeWidth="4" strokeLinecap="round" />
+          </svg>
+
+          {/* Root Node */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10">
+            <div className="w-16 h-16 md:w-20 md:h-20 bg-indigo-600 rounded-full flex items-center justify-center text-white text-2xl md:text-3xl font-bold shadow-lg ring-4 ring-indigo-100">
+              {root}
+            </div>
+          </div>
+
+          {/* Leaves Container */}
+          <div className="absolute bottom-0 w-full flex justify-between px-4">
+            {/* Left Leaf */}
+            <div className={`
+              w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-xl md:text-2xl font-bold shadow-md transition-colors z-10
+              ${isLeftActive 
+                ? 'bg-white border-4 border-indigo-400 text-indigo-600' 
+                : 'bg-slate-200 text-slate-600'
+              }
+            `}>
+              {leftDisplay}
+            </div>
+
+            {/* Right Leaf */}
+            <div className={`
+              w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-xl md:text-2xl font-bold shadow-md transition-colors z-10
+              ${isRightActive 
+                ? 'bg-white border-4 border-indigo-400 text-indigo-600' 
+                : 'bg-slate-200 text-slate-600'
+              }
+            `}>
+              {rightDisplay}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Default Text Display for other modes
+    return (
+      <div className="text-center flex flex-col items-center justify-center">
+        <div className="text-5xl md:text-6xl font-black text-slate-800 tracking-tight whitespace-nowrap">
+          {problem.display.main}
+        </div>
+        {problem.display.sub && (
+           <div className="text-4xl md:text-5xl font-black text-indigo-400 mt-2 tracking-tight">
+             {problem.display.sub}
+           </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full max-w-md mx-auto">
       {/* Score Header */}
@@ -122,7 +194,7 @@ export const MathGame: React.FC<MathGameProps> = ({ mode }) => {
 
       {/* Game Card */}
       <div className={`
-        relative bg-white rounded-3xl shadow-2xl p-8 border-4 transition-all duration-300
+        relative bg-white rounded-3xl shadow-2xl p-6 md:p-8 border-4 transition-all duration-300
         ${status === 'wrong' ? 'border-red-400 animate-shake bg-red-50' : ''}
         ${status === 'correct' ? 'border-green-400 bg-green-50 scale-105' : 'border-transparent'}
       `}>
@@ -132,19 +204,9 @@ export const MathGame: React.FC<MathGameProps> = ({ mode }) => {
           {status === 'wrong' && <XCircle className="text-red-500 w-8 h-8" />}
         </div>
 
-        <div className="text-center mb-8 mt-4 flex flex-col items-center justify-center min-h-[120px]">
-          {/* Main Problem Text */}
-          <div className="text-5xl md:text-6xl font-black text-slate-800 tracking-tight whitespace-nowrap">
-            {problem.display.main}
-          </div>
+        <div className="mb-8 mt-4 flex flex-col items-center justify-center min-h-[160px]">
+          {renderProblemDisplay()}
           
-          {/* Sub Problem Text (e.g. result for factorization) */}
-          {problem.display.sub && (
-             <div className="text-4xl md:text-5xl font-black text-indigo-400 mt-2 tracking-tight">
-               {problem.display.sub}
-             </div>
-          )}
-
           <div className="mt-4 text-gray-400 font-medium text-sm bg-gray-50 px-3 py-1 rounded-full">
             {problem.display.hintText}
           </div>
@@ -154,11 +216,10 @@ export const MathGame: React.FC<MathGameProps> = ({ mode }) => {
           <input
             ref={inputRef}
             type="text" 
-            inputMode="decimal" // Better mobile keyboard for decimals
+            inputMode="decimal" 
             pattern="[0-9.]*"
             value={inputValue}
             onChange={(e) => {
-                // Allow numbers and a single decimal point
                 const val = e.target.value;
                 if (/^[\d.]*$/.test(val)) setInputValue(val);
             }}
@@ -196,8 +257,8 @@ export const MathGame: React.FC<MathGameProps> = ({ mode }) => {
           <span>重置游戏</span>
         </button>
       </div>
-
-      {/* Instructions Overlay (Subtle) */}
+      
+      {/* Instructions Overlay */}
       <div className="mt-4 text-center text-indigo-200/60 text-xs">
         按 <span className="font-bold border border-indigo-200/40 rounded px-1 mx-1">Enter</span> 键提交
       </div>

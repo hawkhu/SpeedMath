@@ -80,6 +80,12 @@ const generateFactorizationProblem = (): MathProblem => {
       main: hideFirst ? `? × ${knownFactor}` : `${knownFactor} × ?`,
       sub: `= ${product}`,
       hintText: '填入缺失的因数'
+    },
+    // Data for the Tree Visualization
+    customVisual: {
+      root: product,
+      left: hideFirst ? '?' : factorA,
+      right: hideFirst ? factorB : '?'
     }
   };
 };
