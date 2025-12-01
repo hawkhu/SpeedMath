@@ -8,6 +8,8 @@ export interface MathProblem {
     sub?: string;      // Optional secondary part (e.g., "= 96" for factorization)
     hintText: string;  // Contextual text (e.g., "Result ≤ 200")
   };
+  // Array of 3 potential answers for multiple choice mode
+  options?: number[];
   // Optional structure for advanced visualizations (like the binary tree)
   customVisual?: {
     root: number;
