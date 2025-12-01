@@ -1,5 +1,5 @@
 {
-  "name": "SpeedMath 200",
-  "description": "A fast-paced mental math game focusing on multiplication tables with results under 200.",
+  "name": "极速心算 200",
+  "description": "一个快节奏的心算游戏，专注于200以内的乘法运算。",
   "requestFramePermissions": []
 }

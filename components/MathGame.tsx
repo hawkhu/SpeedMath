@@ -1,11 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { generateProblem } from '../utils/gameLogic';
-import { MathProblem, GameStatus } from '../types';
+import { MathProblem, GameStatus, GameMode } from '../types';
 import { Button } from './Button';
 import { Trophy, Flame, RefreshCcw, CheckCircle2, XCircle } from 'lucide-react';
 
-export const MathGame: React.FC = () => {
-  const [problem, setProblem] = useState<MathProblem>(generateProblem());
+interface MathGameProps {
+  mode: GameMode;
+}
+
+export const MathGame: React.FC<MathGameProps> = ({ mode }) => {
+  const [problem, setProblem] = useState<MathProblem>(() => generateProblem(mode));
   const [inputValue, setInputValue] = useState('');
   const [status, setStatus] = useState<GameStatus>('idle');
   const [score, setScore] = useState(0);
@@ -13,10 +17,15 @@ export const MathGame: React.FC = () => {
   const [highScore, setHighScore] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Focus input on mount and after every submission
+  // Reset game when mode changes
+  useEffect(() => {
+    handleReset();
+  }, [mode]);
+
+  // Focus input on mount, after submission, or mode change
   useEffect(() => {
     inputRef.current?.focus();
-  }, [problem, status]);
+  }, [problem, status, mode]);
 
   const triggerConfetti = () => {
     if (window.confetti) {
@@ -33,9 +42,12 @@ export const MathGame: React.FC = () => {
     e?.preventDefault();
     if (!inputValue) return;
 
-    const userAnswer = parseInt(inputValue, 10);
+    // Use parseFloat to handle decimal answers for PI mode
+    const userAnswer = parseFloat(inputValue);
     
-    if (userAnswer === problem.product) {
+    // Check for equality. For floating points in this specific game (2 decimals max), exact match is expected.
+    // If we needed loose tolerance, we would use Math.abs(userAnswer - problem.answer) < Number.EPSILON
+    if (userAnswer === problem.answer) {
       // Correct Answer
       setStatus('correct');
       setScore(s => s + 10 + (streak * 2)); // Bonus for streaks
@@ -48,7 +60,7 @@ export const MathGame: React.FC = () => {
 
       // Delay generating next problem slightly to show success state
       setTimeout(() => {
-        setProblem(generateProblem());
+        setProblem(generateProblem(mode));
         setInputValue('');
         setStatus('idle');
       }, 600);
@@ -76,7 +88,7 @@ export const MathGame: React.FC = () => {
   const handleReset = () => {
     setScore(0);
     setStreak(0);
-    setProblem(generateProblem());
+    setProblem(generateProblem(mode));
     setInputValue('');
     setStatus('idle');
     inputRef.current?.focus();
@@ -87,7 +99,7 @@ export const MathGame: React.FC = () => {
       {/* Score Header */}
       <div className="flex justify-between items-center mb-6 bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-sm border border-white/50">
         <div className="flex flex-col">
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Score</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">得分</span>
           <span className="text-2xl font-black text-gray-800 font-mono">{score}</span>
         </div>
         
@@ -96,11 +108,11 @@ export const MathGame: React.FC = () => {
             <Flame size={18} className={streak > 2 ? 'fill-orange-500 animate-pulse' : ''} />
             <span className="font-bold">{streak}</span>
            </div>
-           <span className="text-[10px] font-bold text-gray-400 uppercase">Streak</span>
+           <span className="text-[10px] font-bold text-gray-400 uppercase">连胜</span>
         </div>
 
         <div className="flex flex-col items-end">
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Best</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">最高</span>
           <div className="flex items-center space-x-1">
             <Trophy size={14} className="text-yellow-500" />
             <span className="text-xl font-bold text-gray-700 font-mono">{highScore}</span>
@@ -120,28 +132,35 @@ export const MathGame: React.FC = () => {
           {status === 'wrong' && <XCircle className="text-red-500 w-8 h-8" />}
         </div>
 
-        <div className="text-center mb-8 mt-4">
-          <div className="flex items-center justify-center space-x-4 text-6xl font-black text-slate-800 tracking-tight">
-            <span>{problem.factorA}</span>
-            <span className="text-indigo-400">×</span>
-            <span>{problem.factorB}</span>
+        <div className="text-center mb-8 mt-4 flex flex-col items-center justify-center min-h-[120px]">
+          {/* Main Problem Text */}
+          <div className="text-5xl md:text-6xl font-black text-slate-800 tracking-tight whitespace-nowrap">
+            {problem.display.main}
           </div>
-          <div className="mt-2 text-gray-400 font-medium text-sm">
-            result ≤ 200
+          
+          {/* Sub Problem Text (e.g. result for factorization) */}
+          {problem.display.sub && (
+             <div className="text-4xl md:text-5xl font-black text-indigo-400 mt-2 tracking-tight">
+               {problem.display.sub}
+             </div>
+          )}
+
+          <div className="mt-4 text-gray-400 font-medium text-sm bg-gray-50 px-3 py-1 rounded-full">
+            {problem.display.hintText}
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="relative">
           <input
             ref={inputRef}
-            type="tel" // numerical keypad on mobile
-            inputMode="numeric"
-            pattern="[0-9]*"
+            type="text" 
+            inputMode="decimal" // Better mobile keyboard for decimals
+            pattern="[0-9.]*"
             value={inputValue}
             onChange={(e) => {
-                // Only allow numbers
+                // Allow numbers and a single decimal point
                 const val = e.target.value;
-                if (/^\d*$/.test(val)) setInputValue(val);
+                if (/^[\d.]*$/.test(val)) setInputValue(val);
             }}
             placeholder="?"
             className={`
@@ -161,7 +180,7 @@ export const MathGame: React.FC = () => {
               fullWidth 
               disabled={!inputValue || status !== 'idle'}
             >
-              {status === 'idle' ? 'Submit Answer' : status === 'correct' ? 'Nice!' : 'Try Again'}
+              {status === 'idle' ? '提交答案' : status === 'correct' ? '回答正确！' : '再试一次'}
             </Button>
           </div>
         </form>
@@ -174,13 +193,13 @@ export const MathGame: React.FC = () => {
           className="inline-flex items-center space-x-2 text-indigo-100 hover:text-white transition-colors text-sm font-medium opacity-80 hover:opacity-100"
         >
           <RefreshCcw size={14} />
-          <span>Reset Game</span>
+          <span>重置游戏</span>
         </button>
       </div>
 
       {/* Instructions Overlay (Subtle) */}
       <div className="mt-4 text-center text-indigo-200/60 text-xs">
-        Press <span className="font-bold border border-indigo-200/40 rounded px-1 mx-1">Enter</span> to submit
+        按 <span className="font-bold border border-indigo-200/40 rounded px-1 mx-1">Enter</span> 键提交
       </div>
     </div>
   );
